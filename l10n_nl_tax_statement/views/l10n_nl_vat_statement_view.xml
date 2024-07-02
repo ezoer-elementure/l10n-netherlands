@@ -1,0 +1,148 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Copyright 2017-2019 Onestein (<https://www.onestein.eu>)
+     License AGPL-3.0 or later (https://www.gnu.org/licenses/agpl). -->
+<odoo>
+    <record id="view_l10n_nl_vat_report_form" model="ir.ui.view">
+        <field name="model">l10n.nl.vat.statement</field>
+        <field name="arch" type="xml">
+            <form>
+                <header>
+                    <field name="state" statusbar_visible="draft,posted,final" widget="statusbar"/>
+                </header>
+                <sheet>
+                    <div class="oe_button_box" name="button_box">
+                        <button class="oe_stat_button" icon="fa-repeat" invisible="state not in ['draft']" name="statement_update" string="Update" type="object"/>
+                        <button class="oe_stat_button" icon="fa-arrow-right text-success" invisible="state not in ['draft']" name="post" string="Post" type="object"/>
+                        <button class="oe_stat_button" icon="fa-arrow-left text-success" invisible="state not in ['posted']" name="reset" string="Reset to Draft" type="object"/>
+                        <button class="oe_stat_button" confirm="If you confirm, it will be not possible to modify this Statement or reset it back to draft anymore. Do you confirm?" icon="fa-stop-circle-o text-success" invisible="state not in ['posted']" name="finalize" string="Finalize" type="object"/>
+                    </div>
+                    <div class="oe_title" colspan="4">
+                        <label for="name"/>
+                        <h1>
+                            <field name="name"/>
+                        </h1>
+                    </div>
+                    <group>
+                        <group name="tax_report">
+                            <field groups="base.group_multi_company" name="company_id" options="{'no_create': True}"/>
+                            <field name="is_invoice_basis"/>
+                            <field invisible="parent_id == False" name="parent_id"/>
+                            <field groups="base.group_multi_company" invisible="1" name="display_multicompany_fiscal_unit"/>
+                            <field groups="base.group_multi_company" invisible="display_multicompany_fiscal_unit == False" name="multicompany_fiscal_unit" readonly="state in ['posted', 'final']"/>
+                            <field domain="[('parent_id', '=', company_id)]" groups="base.group_multi_company" invisible="multicompany_fiscal_unit == False" name="fiscal_unit_company_ids" readonly="state in ['posted', 'final']" widget="many2many_tags"/>
+                            <label for="from_date" string="Date"/>
+                            <div class="o_row">
+                                <field class="oe_inline" name="from_date" nolabel="1" options="{'related_end_date': 'to_date'}" readonly="state in ['posted', 'final']" widget="daterange"/>
+                                <i aria-label="Arrow icon" class="fa fa-long-arrow-right mx-2" title="Arrow"/>
+                                <field class="oe_inline" name="to_date" nolabel="1" options="{'related_start_date': 'from_date'}" readonly="state in ['posted', 'final']" widget="daterange"/>
+                            </div>
+                        </group>
+                        <group name="extra_parameters">
+                            <field name="date_posted"/>
+                            <field name="date_update"/>
+                            <field name="currency_id"/>
+                        </group>
+                    </group>
+                    <notebook name="notebook">
+                        <page name="statement" string="BTW Statement">
+                            <group invisible="parent_id == False">
+                                <span class="text-muted">
+                                </span>
+                                <div class="o_row o_row_readonly">
+                                    Check the statement of the parent Company.
+                                </div>
+                            </group>
+                            <group invisible="state != 'draft' or parent_id != False" name="statement_lines" string="BTW Statement lines">
+                                <span class="text-muted">
+                                </span>
+                                <div class="o_row o_row_readonly">
+                                    <div invisible="state not in ['draft']">
+                                        Press the Update button in order to recompute the statement lines!
+                                    </div>
+                                    <button class="oe_highlight" icon="fa-repeat" invisible="state not in ['draft']" name="statement_update" string="Update" type="object"/>
+                                </div>
+                            </group>
+                            <field invisible="parent_id != False" name="line_ids">
+                                <form>
+                                    <group>
+                                        <group>
+                                            <field name="code"/>
+                                            <field name="name"/>
+                                        </group>
+                                        <group>
+                                            <field name="omzet"/>
+                                            <field name="btw"/>
+                                        </group>
+                                    </group>
+                                </form>
+                                <tree create="false" decoration-muted="is_group" delete="false" editable="bottom">
+                                    <field invisible="1" name="is_group"/>
+                                    <field invisible="1" name="is_total"/>
+                                    <field invisible="1" name="is_readonly"/>
+                                    <field name="code" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field invisible="1" name="format_omzet"/>
+                                    <field invisible="1" name="format_btw"/>
+                                    <field invisible="format_omzet == False" name="omzet" readonly="is_readonly == True"/>
+                                    <button icon="fa-search-plus" invisible="format_omzet == False or is_total == True" name="view_base_lines" title="View Base Lines" type="object"/>
+                                    <field invisible="format_btw == False" name="btw" readonly="is_readonly == True"/>
+                                    <button icon="fa-search-plus" invisible="format_btw == False or is_total == True" name="view_tax_lines" title="View Tax Lines" type="object"/>
+                                </tree></field>
+                            <group invisible="parent_id != False">
+                                <group>
+                                </group>
+                                <group>
+                                    <label for="btw_total"/>
+                                    <field name="btw_total" nolabel="1"/>
+                                </group>
+                            </group>
+                        </page>
+                        <page invisible="state != 'draft' or parent_id != False" name="entry_lines" string="Past Undeclared Moves">
+                            <group name="unreported_move_filter" string="Include Undeclared Invoices/Moves">
+                                <group>
+                                    <field name="unreported_move_from_date" readonly="state in ['posted', 'final']" string="From Date"/>
+                                </group>
+                                <group>
+                                    <field invisible="1" name="display_button_add_all_undeclared_invoices"/>
+                                    <button class="oe_highlight" icon="fa-plus" invisible="display_button_add_all_undeclared_invoices != True" name="add_all_undeclared_invoices" string="Add All Undeclared Invoices/Moves" type="object"/>
+                                </group>
+                            </group>
+                            <field name="unreported_move_ids"><tree create="false" decoration-muted="l10n_nl_vat_statement_include != True" delete="false" editable="bottom">
+                                    <field name="date" readonly="1"/>
+                                    <field name="name" readonly="1"/>
+                                    <field name="journal_id" readonly="1"/>
+                                    <field name="partner_id" readonly="1"/>
+                                    <field name="amount_untaxed" readonly="1"/>
+                                    <field name="amount_tax" readonly="1"/>
+                                    <field invisible="1" name="l10n_nl_vat_statement_include"/>
+                                    <button icon="fa-play" invisible="l10n_nl_vat_statement_include == True" name="l10n_nl_add_move_in_statement" string="Add Move" type="object"/>
+                                    <button icon="fa-remove" invisible="l10n_nl_vat_statement_include != True" name="l10n_nl_unlink_move_from_statement" string="Remove Move" type="object"/>
+                                </tree></field>
+                        </page>
+                    </notebook>
+                </sheet>
+                <div class="oe_chatter">
+                    <field name="message_follower_ids"/>
+                    <field name="message_ids"/>
+                </div>
+            </form></field>
+    </record>
+    <record id="view_l10n_nl_vat_report_tree" model="ir.ui.view">
+        <field name="model">l10n.nl.vat.statement</field>
+        <field name="arch" type="xml">
+            <tree decoration-info="state=='draft'" decoration-muted="state in ('final')">
+                <field name="name"/>
+                <field name="from_date"/>
+                <field name="to_date"/>
+                <field name="btw_total"/>
+                <field groups="base.group_multi_company" name="company_id"/>
+                <field name="state"/>
+            </tree></field>
+    </record>
+    <record id="action_account_vat_statement_nl" model="ir.actions.act_window">
+        <field name="name">NL BTW Statement</field>
+        <field name="res_model">l10n.nl.vat.statement</field>
+        <field name="view_mode">tree,form</field>
+    </record>
+    <menuitem action="action_account_vat_statement_nl" groups="account.group_account_manager" id="menu_account_vat_statement_nl" parent="account.menu_finance_reports"/>
+</odoo>
